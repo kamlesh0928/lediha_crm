@@ -29,7 +29,7 @@ class NotificationsPage extends StatelessWidget {
           return ListView(children: [
             for (final n in list)
               ListTile(
-                tileColor: n['read_at'] == null ? Colors.teal.withOpacity(.07) : null,
+                tileColor: n['read_at'] == null ? Colors.teal.withAlpha(18) : null,
                 leading: Icon(n['kind'] == 'task_assigned' ? Icons.task_alt : Icons.person_add_alt),
                 title: Text(str(n['title']) ?? ''),
                 subtitle: Text('${str(n['body']) ?? ''}\n${fmtDateTime(n['created_at'])}'),

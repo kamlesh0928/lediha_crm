@@ -70,9 +70,9 @@ class Pill extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
         decoration: BoxDecoration(
-          color: color.withOpacity(.12),
+          color: color.withAlpha(31),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: color.withOpacity(.45)),
+          border: Border.all(color: color.withAlpha(115)),
         ),
         child: Text(text,
             style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600)),

@@ -3,7 +3,6 @@ import '../../core/util.dart';
 import '../../core/widgets.dart';
 import '../../data/csv_export.dart';
 import '../../data/queries.dart';
-import '../../data/store.dart';
 import '../tasks/tasks_page.dart';
 
 class ReportsPage extends StatelessWidget {
