@@ -1,0 +1,17 @@
+# Manual only (Actions tab -> ios-build -> Run workflow). macOS minutes are limited on the free plan.
+# This checks that the iPhone build compiles. It does NOT produce an installable app
+# (that needs an Apple Developer account and signing).
+name: ios-build
+on:
+  workflow_dispatch:
+jobs:
+  ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter create --org com.lediha --platforms=android,ios --project-name lediha_crm .
+      - run: flutter pub get
+      - run: flutter build ios --no-codesign
