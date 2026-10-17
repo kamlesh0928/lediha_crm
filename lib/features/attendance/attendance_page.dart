@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants.dart';
 import '../../core/util.dart';
 import '../../core/widgets.dart';
-import '../../data/auth_state.dart';
+import '../../data/app_auth.dart';
 import '../../data/queries.dart';
 import '../../data/store.dart';
 import '../location/location_service.dart';
@@ -24,7 +24,7 @@ Future<bool> _consent(BuildContext context) async {
       content: const Text(
           'While you are checked in, this app saves your location every few minutes so the '
           'company can see where field work is happening. Nothing is recorded after you check out. '
-          'Android will show a notification while this is on.'),
+          'Your phone will show a notification or indicator while this is on.'),
       actions: [
         TextButton(onPressed: () => Navigator.pop(dc, false), child: const Text('Cancel')),
         FilledButton(onPressed: () => Navigator.pop(dc, true), child: const Text('I understand')),
@@ -36,7 +36,7 @@ Future<bool> _consent(BuildContext context) async {
 }
 
 Future<void> doCheckIn(BuildContext context) async {
-  final uid = AuthState.instance.uid!;
+  final uid = AppAuth.instance.uid!;
   if (!await _consent(context)) return;
   final pos = await LocationService.current();
   final now = DateTime.now();
@@ -56,7 +56,7 @@ Future<void> doCheckIn(BuildContext context) async {
 }
 
 Future<void> doCheckOut(BuildContext context) async {
-  final uid = AuthState.instance.uid!;
+  final uid = AppAuth.instance.uid!;
   final now = DateTime.now();
   final row = await Store.byId('attendance', attendanceId(uid, dateKey(now)));
   if (row == null || row['check_in_at'] == null || row['check_out_at'] != null) return;
@@ -76,7 +76,7 @@ class AttendanceControl extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final uid = AuthState.instance.uid!;
+    final uid = AppAuth.instance.uid!;
     return Live<Rec?>(
       load: () => Store.byId('attendance', attendanceId(uid, dateKey(DateTime.now()))),
       builder: (context, row) {
@@ -130,7 +130,7 @@ class _AttendancePageState extends State<AttendancePage> {
 
   @override
   Widget build(BuildContext context) {
-    final admin = AuthState.instance.isAdmin;
+    final admin = AppAuth.instance.isAdmin;
     return Scaffold(
       appBar: AppBar(title: const Text('Attendance')),
       body: admin ? _adminView() : _employeeView(),
@@ -280,7 +280,7 @@ class _AttendancePageState extends State<AttendancePage> {
     row['check_out_at'] = cout?.toUtc().toIso8601String();
     row['corrected'] = true;
     row['correction_reason'] = reason.text.trim();
-    row['corrected_by'] = AuthState.instance.uid;
+    row['corrected_by'] = AppAuth.instance.uid;
     await Store.put('attendance', row);
   }
 }

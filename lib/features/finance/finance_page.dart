@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants.dart';
 import '../../core/util.dart';
 import '../../core/widgets.dart';
-import '../../data/auth_state.dart';
+import '../../data/app_auth.dart';
 import '../../data/queries.dart';
 import '../../data/store.dart';
 
@@ -22,7 +22,7 @@ class _FinancePageState extends State<FinancePage> {
   @override
   Widget build(BuildContext context) {
     final key = dateKey(_day);
-    final admin = AuthState.instance.isAdmin;
+    final admin = AppAuth.instance.isAdmin;
     return Scaffold(
       appBar: AppBar(title: const Text('Income & expenses')),
       floatingActionButton: FloatingActionButton.extended(
@@ -175,7 +175,7 @@ class _FinancePageState extends State<FinancePage> {
                       'category': category,
                       'pay_mode': mode,
                       'note': note.text.trim().isEmpty ? null : note.text.trim(),
-                      'created_by': AuthState.instance.uid,
+                      'created_by': AppAuth.instance.uid,
                       'is_deleted': false,
                     });
                     if (sc.mounted) Navigator.pop(sc);

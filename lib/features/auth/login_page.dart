@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../data/auth_state.dart';
+import '../../data/app_auth.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -25,7 +25,7 @@ class _LoginPageState extends State<LoginPage> {
       _error = null;
     });
     try {
-      await AuthState.instance.login(_email.text, _pass.text);
+      await AppAuth.instance.login(_email.text, _pass.text);
     } on AuthException catch (e) {
       _error = e.message.toLowerCase().contains('invalid')
           ? 'Wrong email or password.'

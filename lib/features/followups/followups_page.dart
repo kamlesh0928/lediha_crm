@@ -3,7 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants.dart';
 import '../../core/util.dart';
 import '../../core/widgets.dart';
-import '../../data/auth_state.dart';
+import '../../data/app_auth.dart';
 import '../../data/queries.dart';
 import '../../data/store.dart';
 import '../leads/lead_detail_page.dart';
@@ -73,7 +73,7 @@ Future<void> showFollowupDialog(BuildContext context, Rec lead, {String kind = '
     ),
   );
   if (ok != true) return;
-  final me = AuthState.instance.uid;
+  final me = AppAuth.instance.uid;
   await Store.put('followups', {
     'lead_id': lead['id'],
     'assigned_to': lead['assigned_to'] ?? me,
@@ -153,7 +153,7 @@ class FollowupList extends StatelessWidget {
                   l['priority'] == 'hot' &&
                   l['status'] != 'converted' &&
                   l['status'] != 'lost' &&
-                  (AuthState.instance.isAdmin || l['assigned_to'] == AuthState.instance.uid))
+                  (AppAuth.instance.isAdmin || l['assigned_to'] == AppAuth.instance.uid))
               .toList();
           if (hot.isEmpty) return const EmptyState('No hot leads right now.');
           return ListView(
@@ -233,7 +233,7 @@ class FollowupTile extends StatelessWidget {
     final overdue = !done && when != null && when.isBefore(DateTime.now());
     final phone = str(lead?['phone']);
     final note = str(f['note']) ?? '';
-    final who = AuthState.instance.isAdmin ? names[f['assigned_to']] : null;
+    final who = AppAuth.instance.isAdmin ? names[f['assigned_to']] : null;
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: ListTile(

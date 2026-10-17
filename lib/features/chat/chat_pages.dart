@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/util.dart';
 import '../../core/widgets.dart';
-import '../../data/auth_state.dart';
+import '../../data/app_auth.dart';
 import '../../data/queries.dart';
 import '../../data/store.dart';
 
@@ -17,7 +17,7 @@ class ChatListPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final me = AuthState.instance.uid;
+    final me = AppAuth.instance.uid;
     return Live<Map<String, dynamic>>(
       load: _load,
       builder: (context, data) {
@@ -100,7 +100,7 @@ class _ChatPageState extends State<ChatPage> {
   final _ctl = TextEditingController();
 
   Future<Map<String, dynamic>> _load() async {
-    final me = AuthState.instance.uid;
+    final me = AppAuth.instance.uid;
     final all = await Store.all('messages');
     final list = all.where((m) {
       if (widget.peerId == null) return m['recipient_id'] == null;
@@ -120,7 +120,7 @@ class _ChatPageState extends State<ChatPage> {
     if (text.isEmpty) return;
     _ctl.clear();
     await Store.put('messages', {
-      'sender_id': AuthState.instance.uid,
+      'sender_id': AppAuth.instance.uid,
       'recipient_id': widget.peerId,
       'body': text,
     });
@@ -128,7 +128,7 @@ class _ChatPageState extends State<ChatPage> {
 
   @override
   Widget build(BuildContext context) {
-    final me = AuthState.instance.uid;
+    final me = AppAuth.instance.uid;
     return Scaffold(
       appBar: AppBar(title: Text(widget.title)),
       body: Column(children: [

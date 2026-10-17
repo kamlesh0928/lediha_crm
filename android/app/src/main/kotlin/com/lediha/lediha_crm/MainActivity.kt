@@ -1,4 +1,4 @@
-package com.example.lediha_crm
+package com.lediha.lediha_crm
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -4,7 +4,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../core/util.dart';
-import 'auth_state.dart';
+import 'app_auth.dart';
 import 'queries.dart';
 import 'store.dart';
 
@@ -70,7 +70,7 @@ class CsvExport {
 
   /// Admin phone keeps a fresh CSV copy of everything once a day (when the app is used).
   static Future<void> autoDaily() async {
-    if (!AuthState.instance.isAdmin) return;
+    if (!AppAuth.instance.isAdmin) return;
     final today = dateKey(DateTime.now());
     if (await Store.getMeta('last_auto_export') == today) return;
     try {

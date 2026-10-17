@@ -57,7 +57,7 @@ class ReportsPage extends StatelessWidget {
           final days = <String, double>{};
           for (final r in fin) {
             final k = (r['entry_date'] ?? '').toString();
-            days[k] = (days[k] ?? 0) + (r['kind'] == 'income' ? 1 : -1) * toNum(r['amount']);
+            days[k] = (days[k] ?? 0.0) + (r['kind'] == 'income' ? 1 : -1) * toNum(r['amount']);
           }
           final lastDays = days.keys.toList()..sort((a, b) => b.compareTo(a));
           return ListView(padding: const EdgeInsets.all(16), children: [

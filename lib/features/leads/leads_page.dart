@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants.dart';
 import '../../core/util.dart';
 import '../../core/widgets.dart';
-import '../../data/auth_state.dart';
+import '../../data/app_auth.dart';
 import '../../data/queries.dart';
 import 'lead_detail_page.dart';
 import 'lead_form_page.dart';
@@ -25,7 +25,7 @@ class _LeadsPageState extends State<LeadsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final admin = AuthState.instance.isAdmin;
+    final admin = AppAuth.instance.isAdmin;
     final filters = ['all', if (admin) 'unassigned', 'hot', ...leadStatuses];
     return Scaffold(
       floatingActionButton: admin
@@ -121,7 +121,7 @@ class _LeadsPageState extends State<LeadsPage> {
                         ]),
                         subtitle: Text(
                             '${str(l['phone']) ?? 'No phone'} \u00B7 ${label(str(l['source']))}'
-                            '${assignee != null ? ' \u00B7 $assignee' : (AuthState.instance.isAdmin ? ' \u00B7 Unassigned' : '')}'),
+                            '${assignee != null ? ' \u00B7 $assignee' : (AppAuth.instance.isAdmin ? ' \u00B7 Unassigned' : '')}'),
                         trailing: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.end,

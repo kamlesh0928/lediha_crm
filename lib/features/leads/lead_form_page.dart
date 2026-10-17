@@ -3,7 +3,7 @@ import 'package:uuid/uuid.dart';
 import '../../core/constants.dart';
 import '../../core/util.dart';
 import '../../core/widgets.dart';
-import '../../data/auth_state.dart';
+import '../../data/app_auth.dart';
 import '../../data/queries.dart';
 import '../../data/store.dart';
 
@@ -84,7 +84,7 @@ class _LeadFormPageState extends State<LeadFormPage> {
         ? Map<String, dynamic>.from(_existing!)
         : <String, dynamic>{
             'id': const Uuid().v4(),
-            'created_by': AuthState.instance.uid,
+            'created_by': AppAuth.instance.uid,
             'received_at': nowIso(),
             'is_deleted': false,
           };

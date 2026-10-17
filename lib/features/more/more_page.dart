@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/util.dart';
-import '../../data/auth_state.dart';
+import '../../data/app_auth.dart';
 import '../../data/csv_export.dart';
 import '../../data/store.dart';
 import '../../data/sync_service.dart';
@@ -21,7 +21,7 @@ class MorePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final a = AuthState.instance;
+    final a = AppAuth.instance;
     Widget tile(IconData i, String t, VoidCallback f, {String? sub}) => ListTile(
         leading: Icon(i), title: Text(t), subtitle: sub == null ? null : Text(sub), onTap: f);
     return ListView(children: [
@@ -79,7 +79,7 @@ class MorePage extends StatelessWidget {
             n > 0
                 ? '$n change(s) are not uploaded yet. They stay on this phone and upload when you log in again with the same account.'
                 : 'You will need to sign in again.');
-        if (ok) await AuthState.instance.logout();
+        if (ok) await AppAuth.instance.logout();
       }),
       const SizedBox(height: 24),
     ]);

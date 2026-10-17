@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/util.dart';
 import '../../core/widgets.dart';
-import '../../data/auth_state.dart';
+import '../../data/app_auth.dart';
 import '../../data/queries.dart';
 import '../../data/store.dart';
 import '../attendance/attendance_page.dart';
@@ -24,7 +24,7 @@ class DashboardPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final admin = AuthState.instance.isAdmin;
+    final admin = AppAuth.instance.isAdmin;
     return Live<Map<String, dynamic>>(
       load: _load,
       builder: (context, d) {

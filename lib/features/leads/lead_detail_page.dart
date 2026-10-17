@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants.dart';
 import '../../core/util.dart';
 import '../../core/widgets.dart';
-import '../../data/auth_state.dart';
+import '../../data/app_auth.dart';
 import '../../data/queries.dart';
 import '../../data/store.dart';
 import '../followups/followups_page.dart';
@@ -24,7 +24,7 @@ class LeadDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final admin = AuthState.instance.isAdmin;
+    final admin = AppAuth.instance.isAdmin;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Lead'),
@@ -157,7 +157,7 @@ class LeadDetailPage extends StatelessWidget {
                   final t = await askText(context, 'Add note');
                   if (t == null) return;
                   final stamp =
-                      '[${fmtDateTime(DateTime.now())} \u00B7 ${AuthState.instance.name ?? ''}] $t';
+                      '[${fmtDateTime(DateTime.now())} \u00B7 ${AppAuth.instance.name ?? ''}] $t';
                   final old = str(lead['notes']) ?? '';
                   await _patch(lead, {'notes': old.isEmpty ? stamp : '$old\n$stamp'});
                 },

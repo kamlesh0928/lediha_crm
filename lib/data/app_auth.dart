@@ -5,9 +5,9 @@ import 'sync_service.dart';
 
 /// Who is logged in and what role they have. The role is cached on the phone,
 /// so the app opens correctly even without internet.
-class AuthState extends ChangeNotifier {
-  AuthState._();
-  static final AuthState instance = AuthState._();
+class AppAuth extends ChangeNotifier {
+  AppAuth._();
+  static final AppAuth instance = AppAuth._();
 
   SupabaseClient get _sb => Supabase.instance.client;
   String? uid;

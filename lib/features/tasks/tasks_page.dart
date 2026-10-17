@@ -3,7 +3,7 @@ import 'package:uuid/uuid.dart';
 import '../../core/constants.dart';
 import '../../core/util.dart';
 import '../../core/widgets.dart';
-import '../../data/auth_state.dart';
+import '../../data/app_auth.dart';
 import '../../data/queries.dart';
 import '../../data/store.dart';
 
@@ -26,7 +26,7 @@ class _TasksPageState extends State<TasksPage> {
 
   @override
   Widget build(BuildContext context) {
-    final admin = AuthState.instance.isAdmin;
+    final admin = AppAuth.instance.isAdmin;
     return Scaffold(
       appBar: AppBar(title: const Text('Tasks')),
       floatingActionButton: admin
@@ -103,7 +103,7 @@ class _TasksPageState extends State<TasksPage> {
   }
 
   void _openTask(BuildContext context, Rec t, Map<String, String> names) {
-    final admin = AuthState.instance.isAdmin;
+    final admin = AppAuth.instance.isAdmin;
     showModalBottomSheet(
       context: context,
       showDragHandle: true,
@@ -194,7 +194,7 @@ class _TaskFormPageState extends State<TaskFormPage> {
       'due_at': _due.toUtc().toIso8601String(),
       'status': 'pending',
       'lead_id': _leadId,
-      'created_by': AuthState.instance.uid,
+      'created_by': AppAuth.instance.uid,
     });
     if (mounted) Navigator.pop(context);
   }

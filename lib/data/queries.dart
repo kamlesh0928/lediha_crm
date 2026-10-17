@@ -1,4 +1,4 @@
-import 'auth_state.dart';
+import 'app_auth.dart';
 import 'store.dart';
 
 typedef Rec = Map<String, dynamic>;
@@ -6,7 +6,7 @@ typedef Rec = Map<String, dynamic>;
 /// Read helpers. Employees only ever see their own records (the database enforces
 /// this too - this is just so stale cached rows disappear from their screens).
 class Q {
-  static AuthState get _me => AuthState.instance;
+  static AppAuth get _me => AppAuth.instance;
 
   static List<Rec> sorted(List<Rec> l, String key, {bool desc = true}) {
     l.sort((a, b) {

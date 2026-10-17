@@ -1,9 +1,10 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/constants.dart';
 import '../../core/util.dart';
-import '../../data/auth_state.dart';
+import '../../data/app_auth.dart';
 import '../../data/store.dart';
 
 /// Records the employee's position ONLY between check-in and check-out.
@@ -32,7 +33,25 @@ class LocationService {
   static Future<void> start() async {
     if (_sub != null) return;
     if (!await ensurePermission()) return;
-    final settings = AndroidSettings(
+    final settings = _settings();
+    _sub = Geolocator.getPositionStream(locationSettings: settings).listen(_onPosition);
+  }
+
+  /// Android: foreground service with a visible notification.
+  /// iPhone: background location updates with the blue status-bar indicator
+  /// (needs the Info.plist keys from ios_patch/).
+  static LocationSettings _settings() {
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      return AppleSettings(
+        accuracy: LocationAccuracy.medium,
+        activityType: ActivityType.other,
+        distanceFilter: 30,
+        pauseLocationUpdatesAutomatically: false,
+        showBackgroundLocationIndicator: true,
+        allowBackgroundLocationUpdates: true,
+      );
+    }
+    return AndroidSettings(
       accuracy: LocationAccuracy.medium,
       distanceFilter: 30,
       intervalDuration: const Duration(minutes: locationIntervalMinutes),
@@ -42,7 +61,6 @@ class LocationService {
         enableWakeLock: true,
       ),
     );
-    _sub = Geolocator.getPositionStream(locationSettings: settings).listen(_onPosition);
   }
 
   static Future<void> stop() async {
@@ -61,7 +79,7 @@ class LocationService {
   }
 
   static Future<void> savePing(Position p) async {
-    final uid = AuthState.instance.uid;
+    final uid = AppAuth.instance.uid;
     if (uid == null) return;
     await Store.put(
       'location_pings',
@@ -79,8 +97,8 @@ class LocationService {
 
   /// After an app restart, keep tracking if the employee is still checked in.
   static Future<void> resumeIfCheckedIn() async {
-    final uid = AuthState.instance.uid;
-    if (uid == null || AuthState.instance.isAdmin) return;
+    final uid = AppAuth.instance.uid;
+    if (uid == null || AppAuth.instance.isAdmin) return;
     final row = await Store.byId('attendance', attendanceId(uid, dateKey(DateTime.now())));
     if (row != null && row['check_in_at'] != null && row['check_out_at'] == null) {
       await start();

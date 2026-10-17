@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'auth_state.dart';
+import 'app_auth.dart';
 import 'csv_export.dart';
 import 'store.dart';
 
@@ -66,7 +66,7 @@ class SyncService {
   }
 
   Future<void> syncAll() async {
-    if (_busy || _sb.auth.currentSession == null || !AuthState.instance.loggedIn) return;
+    if (_busy || _sb.auth.currentSession == null || !AppAuth.instance.loggedIn) return;
     _busy = true;
     status.value = 'Syncing...';
     try {
@@ -74,7 +74,7 @@ class SyncService {
       await _pull();
       lastSync.value = DateTime.now();
       status.value = 'Up to date';
-      await AuthState.instance.checkStillActive();
+      await AppAuth.instance.checkStillActive();
       CsvExport.autoDaily();
     } on PostgrestException catch (e) {
       status.value = 'Server error: ${e.message}';

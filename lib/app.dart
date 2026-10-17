@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'data/auth_state.dart';
+import 'data/app_auth.dart';
 import 'features/auth/login_page.dart';
 import 'features/home/home_shell.dart';
 
@@ -26,9 +26,9 @@ class LedihaApp extends StatelessWidget {
         ),
       ),
       home: ListenableBuilder(
-        listenable: AuthState.instance,
+        listenable: AppAuth.instance,
         builder: (_, __) =>
-        AuthState.instance.loggedIn ? const HomeShell() : const LoginPage(),
+            AppAuth.instance.loggedIn ? const HomeShell() : const LoginPage(),
       ),
     );
   }
