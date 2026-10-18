@@ -17,6 +17,7 @@ bool isLate(Rec r) {
 
 Future<bool> _consent(BuildContext context) async {
   if (await Store.getMeta('loc_consent') == '1') return true;
+  if (!context.mounted) return false;
   final ok = await showDialog<bool>(
     context: context,
     builder: (dc) => AlertDialog(
@@ -38,6 +39,7 @@ Future<bool> _consent(BuildContext context) async {
 Future<void> doCheckIn(BuildContext context) async {
   final uid = AppAuth.instance.uid!;
   if (!await _consent(context)) return;
+  if (!context.mounted) return;
   final pos = await LocationService.current();
   final now = DateTime.now();
   final id = attendanceId(uid, dateKey(now));

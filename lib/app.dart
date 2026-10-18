@@ -27,7 +27,7 @@ class LedihaApp extends StatelessWidget {
       ),
       home: ListenableBuilder(
         listenable: AppAuth.instance,
-        builder: (_, __) =>
+        builder: (_, _) =>
             AppAuth.instance.loggedIn ? const HomeShell() : const LoginPage(),
       ),
     );
