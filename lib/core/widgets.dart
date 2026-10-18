@@ -143,7 +143,7 @@ Widget dropdown<T>({
 }) {
   final ok = items.any((i) => i.value == value);
   return DropdownButtonFormField<T>(
-    value: ok ? value : null,
+    initialValue: ok ? value : null,
     items: items,
     onChanged: onChanged,
     isExpanded: true,

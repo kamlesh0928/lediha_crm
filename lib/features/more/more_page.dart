@@ -53,9 +53,9 @@ class MorePage extends StatelessWidget {
         }, sub: 'Also saved on this phone every day you open the app'),
       ValueListenableBuilder<String>(
         valueListenable: SyncService.instance.status,
-        builder: (_, s, __) => ValueListenableBuilder<int>(
+        builder: (_, s, _) => ValueListenableBuilder<int>(
           valueListenable: Store.pendingCount,
-          builder: (_, n, __) => tile(Icons.sync, 'Sync now', () => SyncService.instance.syncAll(),
+          builder: (_, n, _) => tile(Icons.sync, 'Sync now', () => SyncService.instance.syncAll(),
               sub: '$s${n > 0 ? '\n$n change(s) waiting to upload' : ''}'),
         ),
       ),

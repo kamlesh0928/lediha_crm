@@ -64,6 +64,7 @@ class EmployeesPage extends StatelessWidget {
                         if (v == 'reset') {
                           final pw = await askText(context, 'New password (min 8 characters)');
                           if (pw == null) return;
+                          if (!context.mounted) return;
                           if (pw.length < 8) {
                             toast(context, 'Password is too short.');
                             return;

@@ -51,7 +51,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
         actions: [
           ValueListenableBuilder<int>(
             valueListenable: Store.pendingCount,
-            builder: (_, n, __) => IconButton(
+            builder: (_, n, _) => IconButton(
               tooltip: n > 0 ? '$n change(s) waiting to upload' : 'All changes uploaded',
               icon: Badge(
                 label: Text('$n'),

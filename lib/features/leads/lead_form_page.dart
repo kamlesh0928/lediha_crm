@@ -67,7 +67,9 @@ class _LeadFormPageState extends State<LeadFormPage> {
     if (!_form.currentState!.validate()) return;
     final norm = normPhone(_phone.text);
     if (norm.isNotEmpty) {
-      final dups = (await Store.all('leads')).where((l) =>
+      final leads = await Store.all('leads');
+      if (!mounted) return;
+      final dups = leads.where((l) =>
           l['id'] != widget.leadId &&
           l['is_deleted'] != true &&
           normPhone(str(l['phone'])) == norm);
@@ -77,7 +79,7 @@ class _LeadFormPageState extends State<LeadFormPage> {
             context,
             'Possible duplicate',
             '${d['customer_name']} (${label(str(d['status']))}) already uses this number. Save anyway?');
-        if (!ok) return;
+        if (!ok || !mounted) return;
       }
     }
     final row = _existing != null
