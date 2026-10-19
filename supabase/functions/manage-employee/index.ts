@@ -1,5 +1,6 @@
 // Creates employee logins and resets passwords. Only an active admin may call it.
-// Deploy:  supabase functions deploy manage-employee
+// Deploy: Supabase dashboard > Edge Functions > Deploy a new function (Via Editor), then turn Verify JWT OFF.
+// CLI alternative: supabase functions deploy manage-employee --no-verify-jwt
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const cors = {
@@ -12,21 +13,30 @@ const json = (body: unknown, status = 200) =>
     headers: { ...cors, "Content-Type": "application/json" },
   });
 
+// Keys: Supabase injects the new SUPABASE_SECRET_KEYS (JSON) and still injects the old
+// SUPABASE_SERVICE_ROLE_KEY. We prefer the new one.
+function secretKey(): string {
+  try {
+    const keys = JSON.parse(Deno.env.get("SUPABASE_SECRET_KEYS") ?? "{}");
+    if (keys.default) return keys.default as string;
+  } catch (_) { /* fall back below */ }
+  return Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
-    const url = Deno.env.get("SUPABASE_URL")!;
-    const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-    // Who is calling?
-    const caller = createClient(url, anon, {
-      global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } },
+    const admin = createClient(Deno.env.get("SUPABASE_URL")!, secretKey(), {
+      auth: { persistSession: false, autoRefreshToken: false },
     });
-    const { data: { user } } = await caller.auth.getUser();
+
+    // Who is calling? Validate the signed-in user's token ourselves
+    // (turn "Verify JWT" OFF for this function: the platform check does not work with the new keys).
+    const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
+    if (!token) return json({ error: "Not signed in." }, 401);
+    const { data: { user } } = await admin.auth.getUser(token);
     if (!user) return json({ error: "Not signed in." }, 401);
 
-    const admin = createClient(url, service);
     const { data: me } = await admin.from("profiles").select("role,is_active").eq("id", user.id).single();
     if (!me || me.role !== "admin" || !me.is_active) return json({ error: "Admins only." }, 403);
 

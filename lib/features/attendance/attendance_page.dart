@@ -40,12 +40,14 @@ Future<void> doCheckIn(BuildContext context) async {
   final uid = AppAuth.instance.uid!;
   if (!await _consent(context)) return;
   if (!context.mounted) return;
+  final existing = await currentAttendance();
+  if (existing != null && existing['check_in_at'] != null) return; // already checked in today
   final pos = await LocationService.current();
   final now = DateTime.now();
   final id = attendanceId(uid, dateKey(now));
-  final row = await Store.byId('attendance', id) ??
-      {'id': id, 'user_id': uid, 'work_date': dateKey(now)};
-  if (row['check_in_at'] != null) return;
+  final row = existing != null
+      ? Map<String, dynamic>.from(existing)
+      : <String, dynamic>{'id': id, 'user_id': uid, 'work_date': dateKey(now)};
   row['check_in_at'] = now.toUtc().toIso8601String();
   row['check_in_lat'] = pos?.latitude;
   row['check_in_lng'] = pos?.longitude;
@@ -58,15 +60,14 @@ Future<void> doCheckIn(BuildContext context) async {
 }
 
 Future<void> doCheckOut(BuildContext context) async {
-  final uid = AppAuth.instance.uid!;
-  final now = DateTime.now();
-  final row = await Store.byId('attendance', attendanceId(uid, dateKey(now)));
+  final row = await currentAttendance();
   if (row == null || row['check_in_at'] == null || row['check_out_at'] != null) return;
   final pos = await LocationService.current();
-  row['check_out_at'] = now.toUtc().toIso8601String();
-  row['check_out_lat'] = pos?.latitude;
-  row['check_out_lng'] = pos?.longitude;
-  await Store.put('attendance', row);
+  final out = Map<String, dynamic>.from(row);
+  out['check_out_at'] = DateTime.now().toUtc().toIso8601String();
+  out['check_out_lat'] = pos?.latitude;
+  out['check_out_lng'] = pos?.longitude;
+  await Store.put('attendance', out);
   if (pos != null) await LocationService.savePing(pos);
   await LocationService.stop();
   if (context.mounted) toast(context, 'Checked out.');
@@ -78,16 +79,16 @@ class AttendanceControl extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final uid = AppAuth.instance.uid!;
     return Live<Rec?>(
-      load: () => Store.byId('attendance', attendanceId(uid, dateKey(DateTime.now()))),
+      load: currentAttendance,
       builder: (context, row) {
         final cin = row?['check_in_at'];
         final cout = row?['check_out_at'];
+        final startedToday = cin != null && sameDay(parseDt(cin)!, DateTime.now());
         final String status = cin == null
             ? 'Not checked in'
             : cout == null
-                ? 'Checked in at ${fmtTime(cin)}'
+                ? 'Checked in ${startedToday ? fmtTime(cin) : fmtDateTime(cin)}'
                 : 'Done: ${fmtTime(cin)} - ${fmtTime(cout)}  (${durationText(parseDt(cin)!, parseDt(cout)!)})';
         return Card(
           child: Padding(
