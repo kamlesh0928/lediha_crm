@@ -18,7 +18,6 @@ Offline-first mobile CRM for a TV repair business. One app for **Android and iPh
 8. [Quality checks](#quality-checks)
 9. [Project status](#project-status)
 10. [Cost](#cost)
-11. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -142,7 +141,3 @@ Run the Windows checker any time something does not start: `powershell -Executio
 
 Everything runs on free tiers: Supabase free plan, GitHub free plan, OpenStreetMap. The only unavoidable paid item is the
 Apple Developer Program (about USD 99 per year) if employees use iPhones. Android APKs can be shared directly.
-
-## Troubleshooting
-
-Common problems and fixes are listed at the end of [SETUP.md](SETUP.md#troubleshooting).
