@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
-/// Shown instead of a crash when the app was started without env.json.
+/// Shown instead of a crash when the app is not configured or cannot start.
 class ConfigErrorApp extends StatelessWidget {
-  const ConfigErrorApp({super.key});
+  const ConfigErrorApp({super.key, this.details});
+
+  /// Extra technical text (for example the exception) shown at the bottom.
+  final String? details;
 
   @override
   Widget build(BuildContext context) {
@@ -10,27 +13,35 @@ class ConfigErrorApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       home: Scaffold(
         appBar: AppBar(title: const Text('LEDiHA CRM - setup needed')),
-        body: const SafeArea(
-          child: Padding(
-            padding: EdgeInsets.all(20),
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('The app does not know your Supabase address yet.',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-                  SizedBox(height: 12),
-                  Text('1. Copy env.json.example to env.json (project root).\n'
-                      '2. Put your Project URL and your PUBLISHABLE key in it:\n'
-                      '   SUPABASE_URL = https://xxxx.supabase.co\n'
-                      '   SUPABASE_PUBLISHABLE_KEY = sb_publishable_...\n'
-                      '3. Start the app with the flag\n'
-                      '   --dart-define-from-file=env.json\n\n'
-                      'Terminal:  flutter run --dart-define-from-file=env.json\n'
-                      'Android Studio: Run > Edit Configurations > Additional run args.\n'
-                      'VS Code: press F5 (launch.json already has it).'),
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('The app cannot connect to Supabase yet.',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 12),
+                const Text(
+                  'Easiest fix (no run flags needed):\n'
+                  '1. Create the file  assets/config/env.json  in the project.\n'
+                  '2. Put this inside, with your own values:\n'
+                  '   {\n'
+                  '     "SUPABASE_URL": "https://xxxx.supabase.co",\n'
+                  '     "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_..."\n'
+                  '   }\n'
+                  '3. Stop the app and press Run again (a hot reload is not enough).\n\n'
+                  'Use the PUBLISHABLE key, never the secret key.\n\n'
+                  'Alternative: run with  --dart-define-from-file=env.json\n\n'
+                  'Full steps are in SETUP.md.',
+                ),
+                if (details != null) ...[
+                  const SizedBox(height: 16),
+                  const Text('Technical details:', style: TextStyle(fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 4),
+                  SelectableText(details!, style: const TextStyle(fontSize: 12)),
                 ],
-              ),
+              ],
             ),
           ),
         ),

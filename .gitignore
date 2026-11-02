@@ -46,9 +46,13 @@ app.*.map.json
 /android/app/release
 
 # Secrets
-env.json
+assets/config/env.json
 android/key.properties
 *.jks
 *.keystore
 supabase/.env
 backup_out/
+
+# Setup files
+SETUP.md
+CHANGES.md
