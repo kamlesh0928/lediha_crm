@@ -72,6 +72,7 @@ class SyncService {
     try {
       await _push();
       await _pull();
+      await _reconcile();
       lastSync.value = DateTime.now();
       status.value = 'Up to date';
       await AppAuth.instance.checkStillActive();
@@ -89,18 +90,47 @@ class SyncService {
     for (final r in await Store.outbox()) {
       final entity = r['entity'] as String;
       final seq = r['seq'] as int;
-      final payload = Map<String, dynamic>.from(jsonDecode(r['payload'] as String) as Map);
+      final sent = r['payload'] as String;
+      final op = (r['op'] ?? 'upsert') as String;
+      final payload = Map<String, dynamic>.from(jsonDecode(sent) as Map);
       for (final k in serverOnly[entity] ?? const <String>[]) {
         payload.remove(k);
       }
       try {
-        await _sb.from(entity).upsert(payload);
-        await Store.outboxDone(seq, entity, r['rid'] as String);
+        await _send(entity, op, payload);
+        await Store.outboxDone(seq, entity, r['rid'] as String, sent);
       } on PostgrestException catch (e) {
+        // Login expired: stop and retry later instead of marking the change as rejected.
+        if (e.code == 'PGRST301' || e.code == 'PGRST303') rethrow;
         // The server answered and said no (rule or permission). Keep the data, try later.
         await Store.outboxFail(seq, e.message);
       }
       // Network errors are not caught here: they stop the sync and retry next time.
+    }
+  }
+
+  /// New rows use INSERT, changes to existing rows use UPDATE. (An "upsert" would need an INSERT
+  /// permission even for plain edits, which employees must not have for leads and tasks.)
+  Future<void> _send(String entity, String op, Map<String, dynamic> payload) async {
+    if (op == 'upsert') {
+      await _sb.from(entity).upsert(payload);
+      return;
+    }
+    if (op == 'insert') {
+      try {
+        await _sb.from(entity).insert(payload);
+        return;
+      } on PostgrestException catch (e) {
+        if (e.code != '23505') rethrow; // 23505 = already uploaded earlier; continue as an update
+      }
+    }
+    final rows = await _sb.from(entity).update(payload).eq('id', payload['id']).select('id');
+    if (rows.isEmpty) {
+      throw PostgrestException(
+        message: 'Not saved: the record is missing or you no longer have permission '
+            '(for example it was reassigned).',
+        code: 'LEDIHA_NOT_SAVED',
+      );
     }
   }
 
@@ -130,5 +160,25 @@ class SyncService {
         await Store.setMeta('cursor_$e', back.toUtc().toIso8601String());
       }
     }
+  }
+
+  /// Employees: drop local copies of records they can no longer see (reassigned leads, tasks...).
+  /// Checked at most every 10 minutes; admins can see everything so they skip it.
+  Future<void> _reconcile() async {
+    if (AppAuth.instance.isAdmin) return;
+    final last = DateTime.tryParse(await Store.getMeta('last_reconcile') ?? '');
+    if (last != null && DateTime.now().difference(last) < const Duration(minutes: 10)) return;
+    for (final e in ['leads', 'followups', 'tasks']) {
+      final ids = <String>{};
+      var from = 0;
+      while (true) {
+        final rows = await _sb.from(e).select('id').order('id').range(from, from + 999);
+        ids.addAll(rows.map((r) => r['id'].toString()));
+        if (rows.length < 1000) break;
+        from += 1000;
+      }
+      await Store.pruneMissing(e, ids);
+    }
+    await Store.setMeta('last_reconcile', DateTime.now().toIso8601String());
   }
 }

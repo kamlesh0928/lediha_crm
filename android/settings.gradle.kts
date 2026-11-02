@@ -8,7 +8,8 @@ pluginManagement {
             if (localProps.exists()) {
                 localProps.inputStream().use { properties.load(it) }
             }
-            val flutterSdkPath = properties.getProperty("flutter.sdk") ?: "D:/Downloads/flutter_windows_3.32.1-stable/flutter"
+            val flutterSdkPath = properties.getProperty("flutter.sdk") ?: System.getenv("FLUTTER_ROOT")
+            require(flutterSdkPath != null) { "flutter.sdk is not set in android/local.properties - run flutter pub get" }
             flutterSdkPath
         }
 

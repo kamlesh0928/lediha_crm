@@ -135,6 +135,7 @@ class SectionTitle extends StatelessWidget {
       );
 }
 
+/// Drop-down that always shows the value you pass in (so it stays correct after a sync).
 Widget dropdown<T>({
   required String label,
   required T? value,
@@ -142,12 +143,17 @@ Widget dropdown<T>({
   required ValueChanged<T?> onChanged,
 }) {
   final ok = items.any((i) => i.value == value);
-  return DropdownButtonFormField<T>(
-    initialValue: ok ? value : null,
-    items: items,
-    onChanged: onChanged,
-    isExpanded: true,
+  return InputDecorator(
     decoration: InputDecoration(labelText: label),
+    child: DropdownButtonHideUnderline(
+      child: DropdownButton<T>(
+        value: ok ? value : null,
+        items: items,
+        onChanged: onChanged,
+        isExpanded: true,
+        isDense: true,
+      ),
+    ),
   );
 }
 

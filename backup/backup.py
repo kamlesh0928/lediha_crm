@@ -1,9 +1,11 @@
 """Nightly backup: downloads every table through the Supabase REST API and writes CSV files.
-Needs env vars SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (keep them in GitHub Secrets)."""
+Needs env vars SUPABASE_URL and SUPABASE_SECRET_KEY (a secret key, sb_secret_...; keep both in GitHub Secrets)."""
 import csv, json, os, sys, urllib.request, urllib.parse, datetime
 
 URL = os.environ["SUPABASE_URL"].rstrip("/")
-KEY = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
+KEY = os.environ.get("SUPABASE_SECRET_KEY") or os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+if not KEY:
+    sys.exit("Set SUPABASE_SECRET_KEY (a Supabase secret key, sb_secret_...)")
 TABLES = ["profiles", "leads", "followups", "tasks", "attendance", "location_pings",
           "messages", "finance_entries", "notifications", "meta_events", "audit_logs"]
 OUT = os.path.join("backup_out", datetime.date.today().isoformat())
@@ -14,8 +16,11 @@ PAGE = 1000
 def fetch(table, offset):
     q = urllib.parse.urlencode({"select": "*", "order": "id.asc",
                                 "limit": PAGE, "offset": offset})
-    req = urllib.request.Request(f"{URL}/rest/v1/{table}?{q}",
-                                 headers={"apikey": KEY, "Authorization": f"Bearer {KEY}"})
+    # New keys (sb_secret_...) are not JWTs: send them in the apikey header ONLY.
+    headers = {"apikey": KEY}
+    if KEY.startswith("eyJ"):  # old-style JWT service_role key
+        headers["Authorization"] = f"Bearer {KEY}"
+    req = urllib.request.Request(f"{URL}/rest/v1/{table}?{q}", headers=headers)
     with urllib.request.urlopen(req, timeout=60) as r:
         return json.loads(r.read())
 

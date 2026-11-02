@@ -22,12 +22,19 @@ class Store {
     final dir = await getDatabasesPath();
     _db = await openDatabase(
       p.join(dir, 'lediha.db'),
-      version: 1,
+      version: 2,
+      onUpgrade: (d, oldV, newV) async {
+        if (oldV < 2) {
+          // 'upsert' = how changes queued by version 1 were sent
+          await d.execute("ALTER TABLE outbox ADD COLUMN op TEXT NOT NULL DEFAULT 'upsert'");
+        }
+      },
       onCreate: (d, v) async {
         await d.execute('CREATE TABLE cache(entity TEXT NOT NULL, id TEXT NOT NULL, '
             'json TEXT NOT NULL, dirty INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(entity, id))');
         await d.execute('CREATE TABLE outbox(seq INTEGER PRIMARY KEY AUTOINCREMENT, '
             'entity TEXT NOT NULL, rid TEXT NOT NULL, payload TEXT NOT NULL, '
+            "op TEXT NOT NULL DEFAULT 'insert', "
             'attempts INTEGER NOT NULL DEFAULT 0, last_error TEXT)');
         await d.execute('CREATE TABLE meta(k TEXT PRIMARY KEY, v TEXT)');
       },
@@ -66,6 +73,19 @@ class Store {
     row['updated_at'] = now;
     final id = row['id'].toString();
     await _db.transaction((txn) async {
+      // Is this a brand-new row, or a change to one the server already has?
+      final queued = await txn.query('outbox',
+          columns: ['seq', 'op'], where: 'entity = ? AND rid = ?', whereArgs: [entity, id]);
+      var op = 'update';
+      if (queued.isNotEmpty) {
+        op = queued.first['op'] as String;
+      } else if (!cache) {
+        op = 'insert';
+      } else {
+        final had = await txn.query('cache',
+            columns: ['id'], where: 'entity = ? AND id = ?', whereArgs: [entity, id]);
+        if (had.isEmpty) op = 'insert';
+      }
       if (cache) {
         await txn.insert(
           'cache',
@@ -73,9 +93,18 @@ class Store {
           conflictAlgorithm: ConflictAlgorithm.replace,
         );
       }
-      // Coalesce: only the newest full copy of a row needs to be uploaded.
-      await txn.delete('outbox', where: 'entity = ? AND rid = ?', whereArgs: [entity, id]);
-      await txn.insert('outbox', {'entity': entity, 'rid': id, 'payload': jsonEncode(row)});
+      if (queued.isNotEmpty) {
+        // Keep the place in the queue (a follow-up must not jump ahead of its lead).
+        await txn.update(
+          'outbox',
+          {'payload': jsonEncode(row), 'attempts': 0, 'last_error': null},
+          where: 'seq = ?',
+          whereArgs: [queued.first['seq']],
+        );
+      } else {
+        await txn.insert('outbox',
+            {'entity': entity, 'rid': id, 'payload': jsonEncode(row), 'op': op});
+      }
     });
     await _refreshPending();
     version.value++;
@@ -101,17 +130,38 @@ class Store {
     version.value++;
   }
 
+  /// Removes local copies of rows the server no longer shows this user (for example a lead that
+  /// the admin reassigned to someone else). Rows with unsent edits are never removed.
+  static Future<int> pruneMissing(String entity, Set<String> visibleIds) async {
+    final rows = await _db.query('cache',
+        columns: ['id', 'dirty'], where: 'entity = ?', whereArgs: [entity]);
+    var removed = 0;
+    await _db.transaction((txn) async {
+      for (final r in rows) {
+        final id = r['id'] as String;
+        if (!visibleIds.contains(id) && r['dirty'] != 1) {
+          await txn.delete('cache', where: 'entity = ? AND id = ?', whereArgs: [entity, id]);
+          removed++;
+        }
+      }
+    });
+    if (removed > 0) version.value++;
+    return removed;
+  }
+
   // ---------- outbox ----------
   static Future<List<Map<String, Object?>>> outbox() => _db.query('outbox', orderBy: 'seq');
 
-  static Future<void> outboxDone(int seq, String entity, String rid) async {
-    await _db.delete('outbox', where: 'seq = ?', whereArgs: [seq]);
-    final left = Sqflite.firstIntValue(await _db.rawQuery(
-            'SELECT COUNT(*) FROM outbox WHERE entity = ? AND rid = ?', [entity, rid])) ??
-        0;
-    if (left == 0) {
+  /// Called after a successful upload. Removes the queue entry only if it still holds exactly what
+  /// was sent; if the user edited the row meanwhile, the newer copy stays queued.
+  static Future<void> outboxDone(int seq, String entity, String rid, String sentPayload) async {
+    final removed = await _db
+        .delete('outbox', where: 'seq = ? AND payload = ?', whereArgs: [seq, sentPayload]);
+    if (removed > 0) {
       await _db.rawUpdate(
-          'UPDATE cache SET dirty = 0 WHERE entity = ? AND id = ?', [entity, rid]);
+          'UPDATE cache SET dirty = 0 WHERE entity = ? AND id = ? '
+          'AND NOT EXISTS (SELECT 1 FROM outbox WHERE entity = ? AND rid = ?)',
+          [entity, rid, entity, rid]);
     }
     await _refreshPending();
   }

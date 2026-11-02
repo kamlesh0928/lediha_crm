@@ -97,13 +97,32 @@ class LocationService {
 
   /// After an app restart, keep tracking if the employee is still checked in.
   static Future<void> resumeIfCheckedIn() async {
-    final uid = AppAuth.instance.uid;
-    if (uid == null || AppAuth.instance.isAdmin) return;
-    final row = await Store.byId('attendance', attendanceId(uid, dateKey(DateTime.now())));
+    if (AppAuth.instance.uid == null || AppAuth.instance.isAdmin) return;
+    final row = await currentAttendance();
     if (row != null && row['check_in_at'] != null && row['check_out_at'] == null) {
       await start();
     }
   }
+}
+
+/// Today's attendance record - or last night's, if the employee checked in less than 16 hours ago
+/// and has not checked out yet (night shifts that end after midnight).
+Future<Map<String, dynamic>?> currentAttendance() async {
+  final uid = AppAuth.instance.uid;
+  if (uid == null) return null;
+  final now = DateTime.now();
+  final today = await Store.byId('attendance', attendanceId(uid, dateKey(now)));
+  if (today != null) return today;
+  final yesterday = await Store.byId(
+      'attendance', attendanceId(uid, dateKey(now.subtract(const Duration(days: 1)))));
+  final cin = parseDt(yesterday?['check_in_at']);
+  if (yesterday != null &&
+      cin != null &&
+      yesterday['check_out_at'] == null &&
+      now.difference(cin) < const Duration(hours: 16)) {
+    return yesterday;
+  }
+  return null;
 }
 
 /// One attendance row per person per day; the same id on every device avoids duplicates.

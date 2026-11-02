@@ -12,7 +12,18 @@ const APP_SECRET = Deno.env.get("META_APP_SECRET") ?? "";
 const PAGE_TOKEN = Deno.env.get("META_PAGE_ACCESS_TOKEN") ?? "";
 const GRAPH = "https://graph.facebook.com/v21.0";
 
-const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+// Keys: prefer the new SUPABASE_SECRET_KEYS (JSON), fall back to the old SUPABASE_SERVICE_ROLE_KEY.
+function secretKey(): string {
+  try {
+    const keys = JSON.parse(Deno.env.get("SUPABASE_SECRET_KEYS") ?? "{}");
+    if (keys.default) return keys.default as string;
+  } catch (_) { /* fall back below */ }
+  return Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+}
+
+const db = createClient(Deno.env.get("SUPABASE_URL")!, secretKey(), {
+  auth: { persistSession: false, autoRefreshToken: false },
+});
 
 type LeadInput = Record<string, unknown>;
 
