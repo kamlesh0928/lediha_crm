@@ -36,4 +36,8 @@ void main() {
     expect(end.isAfter(DateTime.now().subtract(const Duration(seconds: 1))), isTrue);
     expect(sameDay(end, DateTime.now()), isTrue);
   });
+
+  test('secret-key detector is off when nothing is configured', () {
+    expect(Env.looksLikeSecretKey, isFalse);
+  });
 }

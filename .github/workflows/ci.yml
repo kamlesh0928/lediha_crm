@@ -20,6 +20,8 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
+      - name: Use the runner's JDK (the committed path is for a developer PC)
+        run: sed -i '/^org.gradle.java.home/d' android/gradle.properties
       - run: flutter pub get
       - run: flutter analyze --no-fatal-infos
       - run: flutter test
