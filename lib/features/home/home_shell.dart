@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../core/permissions.dart';
 import '../../data/csv_export.dart';
+import '../../data/push_service.dart';
 import '../../data/queries.dart';
 import '../../data/store.dart';
 import '../../data/sync_service.dart';
@@ -30,6 +32,15 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     SyncService.instance.listen();
     LocationService.resumeIfCheckedIn();
     CsvExport.autoDaily();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _startupPrompts());
+  }
+
+  /// First sign-in: show what the app needs, then (once) offer notifications.
+  Future<void> _startupPrompts() async {
+    if (!mounted) return;
+    await Permissions.showIntroOnce(context);
+    if (!mounted) return;
+    await PushService.instance.start(context);
   }
 
   @override

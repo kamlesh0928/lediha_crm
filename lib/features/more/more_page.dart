@@ -10,7 +10,9 @@ import '../employees/employees_page.dart';
 import '../finance/finance_page.dart';
 import '../location/team_map_page.dart';
 import '../tasks/tasks_page.dart';
+import '../leads/lead_import_page.dart';
 import 'notifications_page.dart';
+import 'permissions_page.dart';
 import 'online_list_page.dart';
 import 'reports_page.dart';
 
@@ -35,10 +37,12 @@ class MorePage extends StatelessWidget {
       tile(Icons.access_time, 'Attendance', () => _go(context, const AttendancePage())),
       tile(Icons.payments_outlined, 'Income & expenses', () => _go(context, const FinancePage())),
       tile(Icons.notifications_none, 'Notifications', () => _go(context, const NotificationsPage())),
+      tile(Icons.privacy_tip_outlined, 'App permissions', () => _go(context, const PermissionsPage())),
       if (a.isAdmin) ...[
         const Divider(),
         tile(Icons.map_outlined, 'Team location', () => _go(context, const TeamMapPage())),
         tile(Icons.badge_outlined, 'Employees', () => _go(context, const EmployeesPage())),
+        tile(Icons.upload_file, 'Import leads (CSV)', () => _go(context, const LeadImportPage())),
         tile(Icons.bar_chart, 'Reports', () => _go(context, const ReportsPage())),
         tile(Icons.hub_outlined, 'Facebook / Instagram / WhatsApp log',
             () => _go(context, OnlineListPage(title: 'Lead sources log', table: 'meta_events', orderBy: 'received_at', tile: metaEventTile))),

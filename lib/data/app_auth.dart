@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'push_service.dart';
 import 'store.dart';
 import 'sync_service.dart';
 
@@ -91,6 +92,7 @@ class AppAuth extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    await PushService.instance.unregister();
     await Store.setMeta('logged_out', '1');
     try {
       await _sb.auth.signOut();
