@@ -111,6 +111,32 @@ class Store {
     onLocalWrite?.call();
   }
 
+  /// Saves many NEW rows in one go (used by the CSV import). One screen refresh, one upload trigger.
+  static Future<void> putMany(String entity, List<Map<String, dynamic>> rows) async {
+    if (rows.isEmpty) return;
+    final now = DateTime.now().toUtc().toIso8601String();
+    await _db.transaction((txn) async {
+      final batch = txn.batch();
+      for (final row in rows) {
+        row['id'] ??= const Uuid().v4();
+        row['created_at'] ??= now;
+        row['updated_at'] = now;
+        final id = row['id'].toString();
+        batch.insert(
+          'cache',
+          {'entity': entity, 'id': id, 'json': jsonEncode(row), 'dirty': 1},
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+        batch.insert('outbox',
+            {'entity': entity, 'rid': id, 'payload': jsonEncode(row), 'op': 'insert'});
+      }
+      await batch.commit(noResult: true);
+    });
+    await _refreshPending();
+    version.value++;
+    onLocalWrite?.call();
+  }
+
   /// Store rows received from the server. Rows with unsent local edits are left alone.
   static Future<void> merge(String entity, List<Map<String, dynamic>> rows) async {
     if (rows.isEmpty) return;

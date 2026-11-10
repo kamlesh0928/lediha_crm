@@ -13,10 +13,11 @@ class LocationService {
   static StreamSubscription<Position>? _sub;
   static DateTime? _lastSaved;
 
+  /// Only CHECKS. It never shows a system prompt: prompts go through Permissions.ask(), so the
+  /// user always reads an explanation first.
   static Future<bool> ensurePermission() async {
     if (!await Geolocator.isLocationServiceEnabled()) return false;
-    var p = await Geolocator.checkPermission();
-    if (p == LocationPermission.denied) p = await Geolocator.requestPermission();
+    final p = await Geolocator.checkPermission();
     return p == LocationPermission.always || p == LocationPermission.whileInUse;
   }
 

@@ -46,13 +46,16 @@ app.*.map.json
 /android/app/release
 
 # Secrets
-assets/config/env.json
+env.json
 android/key.properties
 *.jks
 *.keystore
 supabase/.env
 backup_out/
+assets/config/env.json
+android/app/google-services.json
+*firebase-adminsdk*.json
 
-# Setup files
-SETUP.md
+# Files
 CHANGES.md
+SETUP.md

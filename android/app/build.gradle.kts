@@ -35,7 +35,7 @@ android {
         applicationId = "com.lediha.lediha_crm"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        minSdk = maxOf(flutter.minSdkVersion, 23) // Firebase needs 23 or higher
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -62,4 +62,9 @@ android {
 
 flutter {
     source = "../.."
+}
+
+// Push notifications: active only after you add android/app/google-services.json (see SETUP.md).
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
 }

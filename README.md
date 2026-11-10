@@ -36,6 +36,9 @@ Offline-first mobile CRM for a TV repair business. One app for **Android and iPh
 | **Messages** | Private chats and a team chat. |
 | **Income and expenses** | Daily cash book with categories, payment mode, day and month totals. |
 | **Reports and export** | Reports by status, source and employee; CSV export of all data; daily automatic CSV copy on the admin phone. |
+| **Permission pop-ups** | Every permission is explained (why, when, what if denied) before the phone's prompt; review under More > App permissions. |
+| **CSV import** | Admin imports existing customers with preview, duplicate detection and bulk assignment. |
+| **Push notifications** | Alerts for leads, tasks and messages via Firebase (Android; optional). |
 | **Audit trail** | Every change to leads, tasks, attendance, finance and profiles is logged. |
 | **Works offline** | Everything is saved on the phone first and uploaded automatically when the network returns. |
 
@@ -97,8 +100,8 @@ lib/
   data/          store.dart (local database + outbox), sync_service.dart, app_auth.dart, csv_export.dart
   features/      auth, home, leads, followups, tasks, attendance, location, chat, finance, employees, more
 supabase/
-  migrations/    0001_schema.sql  (tables, security rules, triggers)
-  functions/     manage-employee, meta-webhook
+  migrations/    0001_schema.sql (tables, security rules, triggers), 0002_push_and_import.sql
+  functions/     manage-employee, meta-webhook, send-push
 backup/          nightly backup script
 scripts/         check-setup.ps1 (Windows setup checker)
 assets/config/   env.json (your private settings, git-ignored)
@@ -134,8 +137,9 @@ Run the Windows checker any time something does not start: `powershell -Executio
 | Offline sync, backups, audit log | Implemented |
 | Android and iPhone projects | Configured (iPhone builds need a Mac) |
 | Automated end-to-end tests | Not yet (unit tests only) - test on real devices before go-live |
-| Push notifications (outside the app) | Planned - alerts are inside the app today |
-| CSV import of leads | Planned |
+| Push notifications (Android) | Implemented, optional (SETUP Part 14). iPhone push needs a Mac and an Apple account |
+| CSV import of leads | Implemented |
+| Admin-editable shift times | Planned (constants in `lib/core/constants.dart`) |
 | Replying to WhatsApp / Instagram from the app | Not planned for release 1 (use the WhatsApp button) |
 
 ## Cost

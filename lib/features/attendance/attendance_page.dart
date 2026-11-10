@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/constants.dart';
+import '../../core/permissions.dart';
 import '../../core/util.dart';
 import '../../core/widgets.dart';
 import '../../data/app_auth.dart';
@@ -15,30 +16,11 @@ bool isLate(Rec r) {
   return cin.isAfter(limit);
 }
 
-Future<bool> _consent(BuildContext context) async {
-  if (await Store.getMeta('loc_consent') == '1') return true;
-  if (!context.mounted) return false;
-  final ok = await showDialog<bool>(
-    context: context,
-    builder: (dc) => AlertDialog(
-      title: const Text('Location is recorded'),
-      content: const Text(
-          'While you are checked in, this app saves your location every few minutes so the '
-          'company can see where field work is happening. Nothing is recorded after you check out. '
-          'Your phone will show a notification or indicator while this is on.'),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(dc, false), child: const Text('Cancel')),
-        FilledButton(onPressed: () => Navigator.pop(dc, true), child: const Text('I understand')),
-      ],
-    ),
-  );
-  if (ok == true) await Store.setMeta('loc_consent', '1');
-  return ok == true;
-}
-
 Future<void> doCheckIn(BuildContext context) async {
   final uid = AppAuth.instance.uid!;
-  if (!await _consent(context)) return;
+  // Explain first, then ask. "Not now" cancels the check-in; if the phone then refuses, the
+  // check-in still works, just without a position.
+  if (await Permissions.ask(context, AppPermission.location) == AskResult.skipped) return;
   if (!context.mounted) return;
   final existing = await currentAttendance();
   if (existing != null && existing['check_in_at'] != null) return; // already checked in today
