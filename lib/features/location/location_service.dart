@@ -7,11 +7,17 @@ import '../../core/util.dart';
 import '../../data/app_auth.dart';
 import '../../data/store.dart';
 
-/// Records the employee's position ONLY between check-in and check-out.
-/// While tracking, Android shows a permanent notification (required by the OS).
+/// Records the employee's position between check-in and check-out (or when manual tracking is on).
+/// While tracking, Android shows a notification and iOS shows the blue indicator.
 class LocationService {
   static StreamSubscription<Position>? _sub;
   static DateTime? _lastSaved;
+
+  /// Global reactive tracker state for UI components
+  static final ValueNotifier<bool> isTracking = ValueNotifier<bool>(false);
+
+  /// Most recent captured GPS position
+  static final ValueNotifier<Position?> latestPosition = ValueNotifier<Position?>(null);
 
   /// Only CHECKS. It never shows a system prompt: prompts go through Permissions.ask(), so the
   /// user always reads an explanation first.
@@ -24,23 +30,45 @@ class LocationService {
   static Future<Position?> current() async {
     try {
       if (!await ensurePermission()) return null;
-      return await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high)
+      final pos = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high)
           .timeout(const Duration(seconds: 12));
+      latestPosition.value = pos;
+      return pos;
     } catch (_) {
       return null;
     }
   }
 
-  static Future<void> start() async {
-    if (_sub != null) return;
-    if (!await ensurePermission()) return;
-    final settings = _settings();
-    _sub = Geolocator.getPositionStream(locationSettings: settings).listen(_onPosition);
+  /// Start background GPS tracking
+  static Future<bool> start() async {
+    if (_sub != null) {
+      isTracking.value = true;
+      return true;
+    }
+    if (!await ensurePermission()) {
+      isTracking.value = false;
+      return false;
+    }
+
+    try {
+      final settings = _settings();
+      _sub = Geolocator.getPositionStream(locationSettings: settings).listen(_onPosition);
+      isTracking.value = true;
+
+      // Save initial ping right away on start so position is updated immediately
+      current().then((pos) {
+        if (pos != null) savePing(pos);
+      });
+      return true;
+    } catch (e) {
+      debugPrint('Location tracking start error: $e');
+      isTracking.value = false;
+      return false;
+    }
   }
 
   /// Android: foreground service with a visible notification.
-  /// iPhone: background location updates with the blue status-bar indicator
-  /// (needs the Info.plist keys from ios_patch/).
+  /// iPhone: background location updates with the blue status-bar indicator.
   static LocationSettings _settings() {
     if (defaultTargetPlatform == TargetPlatform.iOS) {
       return AppleSettings(
@@ -57,19 +85,32 @@ class LocationService {
       distanceFilter: 30,
       intervalDuration: const Duration(minutes: locationIntervalMinutes),
       foregroundNotificationConfig: const ForegroundNotificationConfig(
-        notificationTitle: 'LEDiHA CRM',
-        notificationText: 'Location is recorded while you are checked in',
+        notificationTitle: 'LEDiHA TV Repair Service',
+        notificationText: 'Live technician GPS tracking active for customer visits',
         enableWakeLock: true,
       ),
     );
   }
 
+  /// Stop GPS tracking
   static Future<void> stop() async {
     await _sub?.cancel();
     _sub = null;
+    isTracking.value = false;
+  }
+
+  /// Toggle tracking on or off
+  static Future<bool> toggleTracking() async {
+    if (isTracking.value) {
+      await stop();
+      return false;
+    } else {
+      return await start();
+    }
   }
 
   static void _onPosition(Position p) {
+    latestPosition.value = p;
     final now = DateTime.now();
     if (_lastSaved != null &&
         now.difference(_lastSaved!) < const Duration(minutes: locationIntervalMinutes - 1)) {
@@ -82,18 +123,23 @@ class LocationService {
   static Future<void> savePing(Position p) async {
     final uid = AppAuth.instance.uid;
     if (uid == null) return;
-    await Store.put(
-      'location_pings',
-      {
-        'id': const Uuid().v4(),
-        'user_id': uid,
-        'lat': p.latitude,
-        'lng': p.longitude,
-        'accuracy': p.accuracy,
-        'recorded_at': nowIso(),
-      },
-      cache: false,
-    );
+    latestPosition.value = p;
+    try {
+      await Store.put(
+        'location_pings',
+        {
+          'id': const Uuid().v4(),
+          'user_id': uid,
+          'lat': p.latitude,
+          'lng': p.longitude,
+          'accuracy': p.accuracy,
+          'recorded_at': nowIso(),
+        },
+        cache: false,
+      );
+    } catch (e) {
+      debugPrint('Could not save location ping: $e');
+    }
   }
 
   /// After an app restart, keep tracking if the employee is still checked in.

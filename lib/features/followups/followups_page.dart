@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants.dart';
+import '../../core/theme.dart';
 import '../../core/util.dart';
 import '../../core/widgets.dart';
 import '../../data/app_auth.dart';
@@ -10,11 +11,20 @@ import '../leads/lead_detail_page.dart';
 
 IconData kindIcon(String? k) => switch (k) {
       'hot_lead' => Icons.local_fire_department,
-      'pickup' => Icons.local_shipping_outlined,
-      'work_pending' => Icons.build_circle_outlined,
-      'work_done' => Icons.check_circle_outline,
-      'delivery' => Icons.home_outlined,
-      _ => Icons.phone_in_talk_outlined,
+      'pickup' => Icons.local_shipping,
+      'work_pending' => Icons.build_circle,
+      'work_done' => Icons.check_circle,
+      'delivery' => Icons.home_repair_service,
+      _ => Icons.phone_in_talk,
+    };
+
+Color kindColor(String? k) => switch (k) {
+      'hot_lead' => AppColors.brandRed,
+      'pickup' => AppColors.statusContacted,
+      'work_pending' => AppColors.brandTeal,
+      'work_done' => Colors.green.shade700,
+      'delivery' => Colors.indigo,
+      _ => Colors.blueGrey,
     };
 
 Future<void> callNumber(String? phone) async {
@@ -28,7 +38,7 @@ Future<void> whatsappNumber(String? phone) async {
   await launchUrl(Uri.parse('https://wa.me/$n'), mode: LaunchMode.externalApplication);
 }
 
-/// Schedule a follow-up (delivery, pickup, work pending ...) for a lead.
+/// Schedule a follow-up (delivery, pickup, work pending ...) for a TV repair lead.
 Future<void> showFollowupDialog(BuildContext context, Rec lead, {String kind = 'general'}) async {
   var k = kind;
   DateTime when = DateTime.now().add(const Duration(hours: 1));
@@ -37,37 +47,48 @@ Future<void> showFollowupDialog(BuildContext context, Rec lead, {String kind = '
     context: context,
     builder: (dc) => StatefulBuilder(
       builder: (dc, setS) => AlertDialog(
-        title: const Text('Schedule follow-up'),
+        title: const Text('Schedule Service / Follow-up'),
         content: SingleChildScrollView(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            dropdown<String>(
-              label: 'Type',
-              value: k,
-              items: [
-                for (final x in followupKinds)
-                  DropdownMenuItem(value: x, child: Text(followupKindLabels[x]!))
-              ],
-              onChanged: (v) => setS(() => k = v ?? k),
-            ),
-            const SizedBox(height: 10),
-            OutlinedButton.icon(
-              icon: const Icon(Icons.event),
-              label: Text(fmtDateTime(when)),
-              onPressed: () async {
-                final d = await pickDateTime(dc, initial: when);
-                if (d != null) setS(() => when = d);
-              },
-            ),
-            const SizedBox(height: 10),
-            TextField(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              dropdown<String>(
+                label: 'Service Stage',
+                value: k,
+                items: [
+                  for (final x in followupKinds)
+                    DropdownMenuItem(value: x, child: Text(followupKindLabels[x]!))
+                ],
+                onChanged: (v) => setS(() => k = v ?? k),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.event),
+                label: Text(fmtDateTime(when)),
+                onPressed: () async {
+                  final d = await pickDateTime(dc, initial: when);
+                  if (d != null) setS(() => when = d);
+                },
+              ),
+              const SizedBox(height: 12),
+              TextField(
                 controller: note,
                 maxLines: 2,
-                decoration: const InputDecoration(labelText: 'Note')),
-          ]),
+                decoration: const InputDecoration(labelText: 'Service Note (pickup time, parts needed...)'),
+              ),
+            ],
+          ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dc, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(dc, true), child: const Text('Save')),
+          TextButton(
+            onPressed: () => Navigator.pop(dc, false),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.brandRed),
+            onPressed: () => Navigator.pop(dc, true),
+            child: const Text('Save'),
+          ),
         ],
       ),
     ),
@@ -94,33 +115,43 @@ class FollowupsPage extends StatelessWidget {
   const FollowupsPage({super.key});
 
   static const _tabs = [
-    ['today', 'Due today'],
-    ['hot_lead', 'Hot leads'],
-    ['pickup', "Today's pickup"],
-    ['work_pending', 'Work pending'],
-    ['work_done', 'Work done'],
-    ['delivery', 'Delivery'],
+    ['today', 'Due Today'],
+    ['hot_lead', 'Hot TV Leads'],
+    ['pickup', "TV Pickups"],
+    ['work_pending', 'In Workshop'],
+    ['work_done', 'Work Done'],
+    ['delivery', 'Deliveries'],
   ];
 
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: _tabs.length,
-      child: Column(children: [
-        Material(
-          color: Colors.white,
-          child: TabBar(
-            isScrollable: true,
-            tabAlignment: TabAlignment.start,
-            tabs: [for (final t in _tabs) Tab(text: t[1])],
+      child: Column(
+        children: [
+          Material(
+            color: Colors.white,
+            elevation: 1,
+            child: TabBar(
+              isScrollable: true,
+              tabAlignment: TabAlignment.start,
+              indicatorColor: AppColors.brandRed,
+              indicatorWeight: 3,
+              labelColor: AppColors.brandRed,
+              unselectedLabelColor: AppColors.textSecondary,
+              labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+              tabs: [for (final t in _tabs) Tab(text: t[1])],
+            ),
           ),
-        ),
-        Expanded(
-          child: TabBarView(children: [
-            for (final t in _tabs) FollowupList(kind: t[0]),
-          ]),
-        ),
-      ]),
+          Expanded(
+            child: TabBarView(
+              children: [
+                for (final t in _tabs) FollowupList(kind: t[0]),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -155,29 +186,58 @@ class FollowupList extends StatelessWidget {
                   l['status'] != 'lost' &&
                   (AppAuth.instance.isAdmin || l['assigned_to'] == AppAuth.instance.uid))
               .toList();
-          if (hot.isEmpty) return const EmptyState('No hot leads right now.');
-          return ListView(
-            padding: const EdgeInsets.only(bottom: 24),
-            children: [
-              for (final l in hot)
-                Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  child: ListTile(
-                    leading: const CircleAvatar(
-                        child: Icon(Icons.local_fire_department, color: Colors.deepOrange)),
-                    title: Text(str(l['customer_name']) ?? '-'),
-                    subtitle: Text(
-                        '${str(l['phone']) ?? ''}\n${str(l['issue']) ?? ''}${l['next_followup_at'] != null ? '\nNext: ${fmtDateTime(l['next_followup_at'])}' : ''}'),
-                    isThreeLine: true,
-                    trailing: IconButton(
-                        icon: const Icon(Icons.call), onPressed: () => callNumber(str(l['phone']))),
-                    onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => LeadDetailPage(leadId: l['id'].toString()))),
+          if (hot.isEmpty) return const EmptyState('No hot TV repair leads right now.');
+          return ListView.builder(
+            padding: const EdgeInsets.only(bottom: 24, top: 6),
+            itemCount: hot.length,
+            itemBuilder: (_, i) {
+              final l = hot[i];
+              return Card(
+                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                child: ListTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: Color(0xFFFFEBEE),
+                    child: Icon(Icons.local_fire_department, color: AppColors.brandRed),
+                  ),
+                  title: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          str(l['customer_name']) ?? '-',
+                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                        ),
+                      ),
+                      if (l['tv_brand'] != null)
+                        TvBadge(brand: str(l['tv_brand']), model: str(l['tv_model'])),
+                    ],
+                  ),
+                  subtitle: Text(
+                    '${str(l['phone']) ?? ''}\n${str(l['issue']) ?? ''}${l['next_followup_at'] != null ? '\nNext: ${fmtDateTime(l['next_followup_at'])}' : ''}',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  isThreeLine: true,
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.call, color: AppColors.brandTeal, size: 20),
+                        onPressed: () => callNumber(str(l['phone'])),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.chat, color: Colors.green, size: 20),
+                        onPressed: () => whatsappNumber(str(l['phone'])),
+                      ),
+                    ],
+                  ),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => LeadDetailPage(leadId: l['id'].toString()),
+                    ),
                   ),
                 ),
-            ],
+              );
+            },
           );
         }
 
@@ -193,21 +253,29 @@ class FollowupList extends StatelessWidget {
             ? <Rec>[]
             : (fus.where((f) => f['status'] == 'done' && f['kind'] == kind).toList()
               ..sort((a, b) => (b['completed_at'] ?? '').toString().compareTo((a['completed_at'] ?? '').toString())));
+
         if (open.isEmpty && done.isEmpty) {
-          return EmptyState(kind == 'today'
-              ? 'Nothing due today. \u{1F389}'
-              : 'No ${followupKindLabels[kind]!.toLowerCase()} follow-ups yet.\nSchedule them from a lead.');
+          return EmptyState(
+            kind == 'today'
+                ? 'All TV follow-ups are up to date! \u{1F389}'
+                : 'No ${followupKindLabels[kind] ?? 'service'} items scheduled yet.',
+            icon: Icons.done_all,
+          );
         }
+
         return ListView(
           shrinkWrap: limit != null,
           physics: limit != null ? const NeverScrollableScrollPhysics() : null,
-          padding: const EdgeInsets.only(bottom: 24),
+          padding: const EdgeInsets.only(bottom: 24, top: 4),
           children: [
             for (final f in open)
               FollowupTile(f: f, lead: leads[f['lead_id']], names: names),
             if (done.isNotEmpty)
               ExpansionTile(
-                title: Text('Completed (${done.length})'),
+                title: Text(
+                  'Completed (${done.length})',
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.green),
+                ),
                 children: [
                   for (final f in done.take(20))
                     FollowupTile(f: f, lead: leads[f['lead_id']], names: names),
@@ -234,30 +302,69 @@ class FollowupTile extends StatelessWidget {
     final phone = str(lead?['phone']);
     final note = str(f['note']) ?? '';
     final who = AppAuth.instance.isAdmin ? names[f['assigned_to']] : null;
+    final color = kindColor(str(f['kind']));
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: ListTile(
-        leading: CircleAvatar(child: Icon(kindIcon(str(f['kind'])))),
-        title: Text(str(lead?['customer_name']) ?? 'Unknown customer'),
-        subtitle: Text.rich(TextSpan(children: [
-          TextSpan(text: '${followupKindLabels[f['kind']] ?? 'Follow-up'} \u00B7 '),
+        leading: CircleAvatar(
+          backgroundColor: color.withAlpha(20),
+          child: Icon(kindIcon(str(f['kind'])), color: color, size: 20),
+        ),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                str(lead?['customer_name']) ?? 'Customer',
+                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+              ),
+            ),
+            if (lead?['tv_brand'] != null)
+              TvBadge(brand: str(lead!['tv_brand']), model: str(lead!['tv_model'])),
+          ],
+        ),
+        subtitle: Text.rich(
           TextSpan(
-              text: done ? 'Done ${fmtDateTime(f['completed_at'])}' : fmtDateTime(when),
-              style: TextStyle(color: overdue ? Colors.red : null, fontWeight: overdue ? FontWeight.w700 : null)),
-          if (who != null) TextSpan(text: ' \u00B7 $who'),
-          if (note.isNotEmpty) TextSpan(text: '\n$note'),
-        ])),
+            children: [
+              TextSpan(
+                text: '${followupKindLabels[f['kind']] ?? 'Follow-up'} \u00B7 ',
+                style: TextStyle(fontWeight: FontWeight.w600, color: color),
+              ),
+              TextSpan(
+                text: done ? 'Completed ${fmtDateTime(f['completed_at'])}' : fmtDateTime(when),
+                style: TextStyle(
+                  color: overdue ? Colors.red : null,
+                  fontWeight: overdue ? FontWeight.w700 : null,
+                ),
+              ),
+              if (who != null) TextSpan(text: ' \u00B7 $who'),
+              if (note.isNotEmpty) TextSpan(text: '\n$note'),
+            ],
+          ),
+          style: const TextStyle(fontSize: 12),
+        ),
         isThreeLine: note.isNotEmpty,
-        trailing: PopupMenuButton<String>(
-          onSelected: (v) => _action(context, v),
-          itemBuilder: (_) => [
-            if (phone != null && phone.isNotEmpty)
-              const PopupMenuItem(value: 'call', child: Text('Call')),
-            if (phone != null && phone.isNotEmpty)
-              const PopupMenuItem(value: 'wa', child: Text('WhatsApp')),
-            if (!done) const PopupMenuItem(value: 'done', child: Text('Mark done')),
-            if (!done) const PopupMenuItem(value: 'resched', child: Text('Reschedule')),
-            const PopupMenuItem(value: 'open', child: Text('Open lead')),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (phone != null && phone.isNotEmpty) ...[
+              IconButton(
+                icon: const Icon(Icons.call, color: AppColors.brandTeal, size: 18),
+                onPressed: () => callNumber(phone),
+              ),
+              IconButton(
+                icon: const Icon(Icons.chat, color: Colors.green, size: 18),
+                onPressed: () => whatsappNumber(phone),
+              ),
+            ],
+            PopupMenuButton<String>(
+              onSelected: (v) => _action(context, v),
+              itemBuilder: (_) => [
+                if (!done) const PopupMenuItem(value: 'done', child: Text('Mark completed')),
+                if (!done) const PopupMenuItem(value: 'resched', child: Text('Reschedule')),
+                const PopupMenuItem(value: 'open', child: Text('Open TV Lead')),
+              ],
+            ),
           ],
         ),
         onTap: lead == null ? null : () => _action(context, 'open'),
@@ -274,12 +381,20 @@ class FollowupTile extends StatelessWidget {
         await whatsappNumber(phone);
       case 'open':
         if (lead != null) {
-          Navigator.push(context,
-              MaterialPageRoute(builder: (_) => LeadDetailPage(leadId: lead!['id'].toString())));
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => LeadDetailPage(leadId: lead!['id'].toString()),
+            ),
+          );
         }
       case 'done':
-        final outcome = await askText(context, 'What happened?',
-            hint: 'e.g. Delivered, customer paid', required: false);
+        final outcome = await askText(
+          context,
+          'Service Outcome',
+          hint: 'e.g. TV delivered & tested, customer paid in cash',
+          required: false,
+        );
         if (outcome == null) return;
         await Store.put('followups', {
           ...f,

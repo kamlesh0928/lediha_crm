@@ -11,7 +11,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Env.load();
   if (!Env.isConfigured) {
-    runApp(const ConfigErrorApp());
+    runApp(ConfigErrorApp(details: Env.problem.isEmpty ? null : Env.problem));
     return;
   }
   if (Env.looksLikeSecretKey) {

@@ -55,7 +55,3 @@ backup_out/
 assets/config/env.json
 android/app/google-services.json
 *firebase-adminsdk*.json
-
-# Files
-CHANGES.md
-SETUP.md
